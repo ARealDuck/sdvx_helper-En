@@ -53,12 +53,13 @@ class ScoreViewer:
         self.sdvx_logger = SDVXLogger()
         self.window = None
 
+    #Loads Music list from musiclist.pkl
     def load_musiclist(self):
         try:
             with open('resources/musiclist.pkl', 'rb') as f:
                 self.musiclist = pickle.load(f)
         except:
-            print('musiclist読み込み時エラー。新規作成します。')
+            print('There was an Error when trying to load the music list. Please create a new one.')
             self.musiclist = {}
             self.musiclist['jacket'] = {}
             self.musiclist['jacket']['nov'] = {}
@@ -71,14 +72,14 @@ class ScoreViewer:
             self.musiclist['info']['exh'] = {}
             self.musiclist['info']['APPEND'] = {}
 
-    # 曲リストを最新化
+    # Updates Music List
     def update_musiclist(self):
         try:
             if self.settings['autoload_musiclist']:
                 with urllib.request.urlopen(self.params['url_musiclist']) as wf:
                     with open('resources/musiclist.pkl', 'wb') as f:
                         f.write(wf.read())
-                print('musiclist.pklを更新しました。')
+                print('Updated "musiclist.pkl"')
         except Exception:
             print(traceback.format_exc())
 
@@ -87,10 +88,10 @@ class ScoreViewer:
         try:
             with open(SETTING_FILE) as f:
                 ret = json.load(f)
-                print(f"設定をロードしました。\n")
+                print(f"Settings Loaded\n")
         except Exception as e:
             logger.debug(traceback.format_exc())
-            print(f"有効な設定ファイルなし。デフォルト値を使います。")
+            print(f"Settings.json File Not found. Loading Default Values")
 
         ### 後から追加した値がない場合にもここでケア
         for k in default_val.keys():

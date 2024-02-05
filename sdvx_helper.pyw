@@ -74,8 +74,8 @@ class SDVXHelper:
         self.save_settings() # 値が追加された場合のために、一度保存
         self.update_musiclist()
         self.sdvx_logger = SDVXLogger(player_name=self.settings['player_name'])
-        self.vf_pre = self.sdvx_logger.total_vf # アプリ起動時のVF
-        self.vf_cur = self.sdvx_logger.total_vf # 最新のVF
+        self.vf_pre = self.sdvx_logger.total_vf # アプリ起動時のVF|VF on program start
+        self.vf_cur = self.sdvx_logger.total_vf # 最新のVF|Current VF
         self.connect_obs()
         vf_str = f"{self.settings['obs_txt_vf_header']}{self.vf_cur:.3f} ({self.vf_cur-self.vf_pre:+.3f}){self.settings['obs_txt_vf_footer']}"
         if self.obs != False:
@@ -138,24 +138,22 @@ class SDVXHelper:
         try:
             with open(SETTING_FILE) as f:
                 ret = json.load(f)
-                print(f"設定をロードしました。\n")
+                print(f"Settings Loaded\n")
         except Exception as e:
             logger.debug(traceback.format_exc())
-            print(f"有効な設定ファイルなし。デフォルト値を使います。")
+            print(f"Settings.json File not found. Using default values.")
 
         ### 後から追加した値がない場合にもここでケア
         for k in default_val.keys():
             if not k in ret.keys():
-                print(f"{k}が設定ファイル内に存在しません。デフォルト値({default_val[k]}を登録します。)")
+                print(f"{k}Is not found in config. Using Defaults({default_val[k]}Registered)")
                 ret[k] = default_val[k]
         self.settings = ret
         with open(self.settings['params_json'], 'r') as f:
             self.params = json.load(f)
         return ret
-
+#saves the Users Settings
     def save_settings(self):
-        """ユーザ設定(self.settings)を保存する。
-        """
         with open(SETTING_FILE, 'w') as f:
             json.dump(self.settings, f, indent=2)
 
@@ -196,7 +194,7 @@ class SDVXHelper:
         self.th_webhook.start()
             
         self.gen_summary.generate() # ここでサマリも更新
-        print(f"スクリーンショットを保存しました -> {dst}")
+        print(f"Screenshot Saved -> {dst}")
 
         # ライバル欄更新
         if type(title) == str:
@@ -286,7 +284,7 @@ class SDVXHelper:
             self.check_rival_update()
         except Exception:
             logger.debug(traceback.format_exc())
-            print('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
+            print('Failed to log Rival') # ネットワーク接続やURL設定を見直す必要がある
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -418,16 +416,16 @@ class SDVXHelper:
             ]
         ]
         layout = [
-            [sg.Text('プレーヤー名'), sg.Input(self.settings['player_name'], key='player_name2')],
-            [sg.Listbox(self.settings['webhook_names'], size=(50, 5), key='list_webhook', enable_events=True), sg.Button('追加', key='webhook_add', tooltip='同じ名前の場合は上書きされます。'), sg.Button('削除', key='webhook_del')],
-            [sg.Text('設定名'), sg.Input('', key='webhook_names', size=(63,1))],
+            [sg.Text('Player Name'), sg.Input(self.settings['player_name'], key='player_name2')],
+            [sg.Listbox(self.settings['webhook_names'], size=(50, 5), key='list_webhook', enable_events=True), sg.Button('Add', key='webhook_add', tooltip='If the same name is used it will be overwritten'), sg.Button('Delete', key='webhook_del')],
+            [sg.Text('Config Name'), sg.Input('', key='webhook_names', size=(63,1))],
             [sg.Text('Webhook URL(Discord)'), sg.Input('', key='webhook_urls', size=(50,1))],
-            [sg.Checkbox('画像を送信する', key='webhook_enable_pics', default=True)],
-            [sg.Frame('送信対象Lv', layout=layout_lvs, title_color='#000044')],
-            [sg.Frame('送信対象ランプ', layout=layout_lamps, title_color='#000044')],
+            [sg.Checkbox('Send Image', key='webhook_enable_pics', default=True)],
+            [sg.Frame('Level', layout=layout_lvs, title_color='#000044')],
+            [sg.Frame('Lamp', layout=layout_lamps, title_color='#000044')],
         ]
 
-        self.window = sg.Window(f"SDVX helper - カスタムWebhook設定", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(f"SDVX helper - Webhook Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_googledrive(self):
         """Googleドライブ連携設定用のGUIを起動する。
@@ -439,21 +437,21 @@ class SDVXHelper:
             [sg.Table([[self.settings['rival_names'][i], self.settings['rival_googledrive'][i]] for i in range(len(self.settings['rival_names']))], key='rival_names', auto_size_columns=False, headings=['name', 'gdrive_id'], size=(30,7), col_widths=[15, 30], justification='left', enable_events=True)],
         ]
         layout_btn = [
-            [par_btn('追加', key='add_rival')],
-            [par_btn('削除', key='del_rival')],
+            [par_btn('Add', key='add_rival')],
+            [par_btn('Delete', key='del_rival')],
             #[par_btn('上書き', key='mod_rival')],
         ]
         layout = [
-            [sg.Text('自分のプレーヤー名'), sg.Input(self.settings['player_name'], key='player_name3')],
-            [par_text('自分のプレーデータ用自動保存先'), par_btn('変更', key='btn_my_googledrive')],
+            [sg.Text('Your User Name'), sg.Input(self.settings['player_name'], key='player_name3')],
+            [par_text('Folder For Automatic Storage'), par_btn('Change', key='btn_my_googledrive')],
             [par_text(self.settings['my_googledrive'], key='txt_my_googledrive')],
-            [sg.Checkbox('起動時にライバルのスコアを取得する',self.settings['get_rival_score'],key='get_rival_score', enable_events=True)],
-            [sg.Checkbox('リザルト画面の度にライバル関連データを更新する',self.settings['update_rival_on_result'],key='update_rival_on_result', enable_events=True)],
-            [par_text('ライバル名'), sg.Input('', key='rival_name', size=(30,1))],
-            [par_text('ライバル用URL'), sg.Input('', key='rival_googledrive')],
+            [sg.Checkbox('Get Rival Score on Startup',self.settings['get_rival_score'],key='get_rival_score', enable_events=True)],
+            [sg.Checkbox('Update Rival Score on Results',self.settings['update_rival_on_result'],key='update_rival_on_result', enable_events=True)],
+            [par_text('Rival Name'), sg.Input('', key='rival_name', size=(30,1))],
+            [par_text('Rival URL'), sg.Input('', key='rival_googledrive')],
             [sg.Column(layout_list), sg.Column(layout_btn)]
         ]
-        self.window = sg.Window(f"SDVX helper - Googleドライブ設定", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(f"SDVX helper - Google Drive Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_obs_control(self):
         """OBS制御設定画面のGUIを起動する。
@@ -474,17 +472,17 @@ class SDVXHelper:
         layout_boot = self.build_layout_one_scene('boot')
         layout_quit = self.build_layout_one_scene('quit')
         layout_obs2 = [
-            [par_text('シーンコレクション(起動時に切り替え):'), sg.Combo(self.obs.get_scene_collection_list(), key='scene_collection', size=(40,1), enable_events=True)],
-            [par_text('シーン:'), sg.Combo(obs_scenes, key='combo_scene', size=(40,1), enable_events=True)],
-            [par_text('ソース:'),sg.Combo(obs_sources, key='combo_source', size=(40,1))],
-            [par_text('ゲーム画面:'), par_text(self.settings['obs_source'], size=(20,1), key='obs_source'), par_btn('set', key='set_obs_source')],
-            [sg.Frame('選曲画面',layout=layout_select, title_color='#000044')],
-            [sg.Frame('プレー中',layout=layout_play, title_color='#000044')],
-            [sg.Frame('リザルト画面',layout=layout_result, title_color='#000044')],
+            [par_text('Scene Collection(Toggled on Startup:'), sg.Combo(self.obs.get_scene_collection_list(), key='scene_collection', size=(40,1), enable_events=True)],
+            [par_text('Scene:'), sg.Combo(obs_scenes, key='combo_scene', size=(40,1), enable_events=True)],
+            [par_text('Source:'),sg.Combo(obs_sources, key='combo_source', size=(40,1))],
+            [par_text('Game Source:'), par_text(self.settings['obs_source'], size=(20,1), key='obs_source'), par_btn('set', key='set_obs_source')],
+            [sg.Frame('Song Select',layout=layout_select, title_color='#000044')],
+            [sg.Frame('In Chart',layout=layout_play, title_color='#000044')],
+            [sg.Frame('Results Screen',layout=layout_result, title_color='#000044')],
         ]
         layout_r = [
-            [sg.Frame('打鍵カウンタ起動時', layout=layout_boot, title_color='#000044')],
-            [sg.Frame('打鍵カウンタ終了時', layout=layout_quit, title_color='#000044')],
+            [sg.Frame('When Keystroke Counter Activates', layout=layout_boot, title_color='#000044')],
+            [sg.Frame('When Keystroke Counter Ends', layout=layout_quit, title_color='#000044')],
         ]
 
         col_l = sg.Column(layout_r)
@@ -494,7 +492,7 @@ class SDVXHelper:
             [col_l, col_r],
             [sg.Text('', key='info', font=(None,9))]
         ]
-        self.window = sg.Window(f"SDVX helper - OBS制御設定", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(f"SDVX helper - OBS Control Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
         if self.settings['obs_scene_collection'] != '':
             self.window['scene_collection'].update(value=self.settings['obs_scene_collection'])
 
@@ -510,34 +508,34 @@ class SDVXHelper:
             [par_text('OBS websocket password'), sg.Input(self.settings['passwd'], font=FONT, key='input_passwd', size=(20,20), password_char='*')],
         ]
         layout_gamemode = [
-            [par_text('画面の向き(設定画面で選んでいるもの)'), sg.Radio('頭が右', group_id='topmode',default=self.settings['top_is_right'], key='top_is_right'), sg.Radio('頭が左', group_id='topmode', default=not self.settings['top_is_right'])],
+            [par_text('Screen Orientation (When Screen is set to landscape)'), sg.Radio('Top is Right', group_id='topmode',default=self.settings['top_is_right'], key='top_is_right'), sg.Radio('Top is Left', group_id='topmode', default=not self.settings['top_is_right'])],
         ]
         layout_etc = [
-            [sg.Checkbox('画面取得時にファイル保存を行う(旧方式)', self.settings['save_on_capture'], key='save_on_capture', enable_events=True, tooltip='有効(旧方式): out/capture.pngに保存される\n無効(新方式): メモリ上で処理(ディスク負荷小)\n本ツールによってカクつきが発生する場合は有効にしてみてください。')],
-            [par_text('リザルト自動保存先フォルダ'), par_btn('変更', key='btn_autosave_dir')],
+            [sg.Checkbox('Screenshot Processing Compatibility Mode', self.settings['save_on_capture'], key='save_on_capture', enable_events=True, tooltip='Compatibility mode enabled. Screenshots will be saved in:out/capture.png\nCompatability mode Disabled, Screenshots will be processed in memory.\nIf this tool Causes lag/Crackling Try This.')],
+            [par_text('Screenshots Folder'), par_btn('Change', key='btn_autosave_dir')],
             [sg.Text(self.settings['autosave_dir'], key='txt_autosave_dir')],
-            [sg.Checkbox('更新に関係なく常時保存する',self.settings['autosave_always'],key='chk_always', enable_events=True)],
-            [sg.Checkbox('サマリ画像生成時にrankDを無視する',self.settings['ignore_rankD'],key='chk_ignore_rankD', enable_events=True)],
-            [sg.Button('保存したリザルト画像をプレーログに反映(重いです)', key='read_from_result')],
-            [sg.Button('保存したリザルト画像からVFビュー用ジャケット画像を一括生成', key='gen_jacket_imgs')], 
-            [sg.Checkbox('リザルト画面でジャケット画像を自動保存(VF表示ビュー用)', self.settings['save_jacketimg'], key='save_jacketimg')],
-            [sg.Text('プレイ曲数用テキストの設定', tooltip='OBSで指定した名前のテキストソースを作成しておくと、\n本日のプレイ曲数を表示することができます。')],
+            [sg.Checkbox('Always Save Screenshots',self.settings['autosave_always'],key='chk_always', enable_events=True)],
+            [sg.Checkbox('Ignore if score is D rank',self.settings['ignore_rankD'],key='chk_ignore_rankD', enable_events=True)],
+            [sg.Button('Update stats from screenshots (Heavy)', key='read_from_result')],
+            [sg.Button('Generate jacket images from screenshots (for VF view)', key='gen_jacket_imgs')],
+            [sg.Checkbox('Automatic Saving of jacket images from results screen(For VF View)', self.settings['save_jacketimg'], key='save_jacketimg')],
+            [sg.Text('Text Settings for Playcount', tooltip='Use a text source In obs for this.\nIt update the source with your playcount.')],
             [
-                #par_text('テキストソース名'),sg.Input(self.settings['obs_txt_plays'], key='obs_txt_plays', size=(20,1)),
-                sg.Text('ヘッダ', tooltip='"play: "や"本日の曲数:"など'),sg.Input(self.settings['obs_txt_plays_header'], key='obs_txt_plays_header', size=(10,1)),
-                sg.Text('フッタ', tooltip='"plays", "曲"など'), sg.Input(self.settings['obs_txt_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
+                #par_text('Source Name'),sg.Input(self.settings['obs_txt_plays'], key='obs_txt_plays', size=(20,1)),
+                sg.Text('Header', tooltip='Plays:, Number of songs played today:, etc,'),sg.Input(self.settings['obs_txt_plays_header'], key='obs_txt_plays_header', size=(10,1)),
+                sg.Text('Footer', tooltip='Plays, Songs, etc,'), sg.Input(self.settings['obs_txt_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
             ],
-            [sg.Checkbox('BLASTER GAUGE最大時に音声でリマインドする',self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
-            [sg.Text('ログ画像の背景の不透明度(0-255, 0:完全に透過)'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
-            [sg.Checkbox('起動時にアップデートを確認する',self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
-            [sg.Text('sdvx_stats.htmlに表示するプレーヤー名'),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
+            [sg.Checkbox('Play a sound when BLASTER GAUGE is at max',self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
+            [sg.Text('Opacity of Log Image(0-255, 0:Transparent)'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
+            [sg.Checkbox('Check for updates on startup',self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
+            [sg.Text('Playername for sdvx_stats.html'),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
         ]
         layout = [
-            [sg.Frame('OBS設定', layout=layout_obs, title_color='#000044')],
-            [sg.Frame('ゲームモード等の設定', layout=layout_gamemode, title_color='#000044')],
-            [sg.Frame('その他設定', layout=layout_etc, title_color='#000044')],
+            [sg.Frame('OBS Settings', layout=layout_obs, title_color='#000044')],
+            [sg.Frame('Game Settings', layout=layout_gamemode, title_color='#000044')],
+            [sg.Frame('Program Settings', layout=layout_etc, title_color='#000044')],
         ]
-        self.window = sg.Window('SDVX helper', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window('SDVX helper General Settings', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_main(self):
         """メイン画面のGUIを起動する。
@@ -547,17 +545,17 @@ class SDVXHelper:
         if self.window:
             self.window.close()
         menuitems = [
-            ['ファイル',['設定','OBS制御設定', 'カスタムWebhook設定', 'アップデートを確認']],
-            ['ライバル関連',['Googleドライブ設定(ライバル関連)', 'ライバルのスコアを取得']],
-            ['分析',['VF内訳をツイート', '全プレーログをCSV出力', '自己ベストをCSV出力']]
+            ['File',['Settings','OBS Control Settings', 'Webhook Settings', 'Check for updates']],
+            ['Rivals',['Google Drive settings (For Rivals)', 'Update Rival Scores']],
+            ['Export',['Tweet VF Breakdown', 'Export Playlog as a CSV ', 'Export Personal bests as a CSV']]
         ]
         layout = [
             [sg.Menubar(menuitems, key='menu')],
             [
                 par_text('plays:'), par_text(str(self.plays), key='txt_plays')
                 ,par_text('mode:'), par_text(self.detect_mode.name, key='txt_mode')
-                ,par_text('error! OBS接続不可', key='txt_obswarning', text_color="#ff0000")],
-            [par_btn('save', tooltip='画像を保存します', key='btn_savefig')],
+                ,par_text('Error: OBS websocket not found!', key='txt_obswarning', text_color="#ff0000")],
+            [par_btn('save', tooltip='Screenshot what is currently on screen', key='btn_savefig')],
             [par_text('', size=(40,1), key='txt_info')],
         ]
         if self.settings['dbg_enable_output']:
@@ -603,15 +601,15 @@ class SDVXHelper:
             self.obs = OBSSocket(self.settings['host'], self.settings['port'], self.settings['passwd'], self.settings['obs_source'], self.imgpath)
             if self.gui_mode == gui_mode.main:
                 self.window['txt_obswarning'].update('')
-                print('OBSに接続しました')
+                print('Connected to OBS Websocket')
             return True
         except:
             logger.debug(traceback.format_exc())
             self.obs = False
             print('obs socket error!')
             if self.gui_mode == gui_mode.main:
-                self.window['txt_obswarning'].update('error! OBS接続不可')
-                print('Error!! OBSとの接続に失敗しました。')
+                self.window['txt_obswarning'].update('Error: OBS Websocket not found!')
+                print('Error: OBS websocket not found!')
             return False
 
     def control_obs_sources(self, name:str):
@@ -771,10 +769,10 @@ class SDVXHelper:
             val (dict): pysimpleguiのwindow.read()で貰えるval
         """
         if self.window['webhook_names'] == '':
-            sg.popup_ok('設定名を入力してください。')
+            sg.popup_ok('Please enter a config name')
         else:
             if self.window['webhook_urls'] == '':
-                sg.popup_ok('WebhookのURLを入力してください。')
+                sg.popup_ok('Please enter a Webhook URL')
             else: # 登録実行
                 if val['webhook_names'] in self.settings['webhook_names']: # 上書きの場合
                     idx = self.settings['webhook_names'].index(val['webhook_names'])
@@ -873,7 +871,7 @@ class SDVXHelper:
             try:
                 res = webhook.execute()
             except Exception:
-                print('webhook送出エラー(URLがおかしい？)')
+                print('Error: Failed to send image through webhook, Is your URL correct?')
                 logger.debug(traceback.format_exc())
 
     def update_musicinfo(self):
@@ -906,8 +904,8 @@ class SDVXHelper:
             logger.debug('cannot connect to OBS -> exit')
             return False
         if self.settings['obs_source'] == '':
-            print("\nゲーム画面用ソースが設定されていません。\nメニュー->OBS制御設定からゲーム画面の指定を行ってください。")
-            self.window['txt_obswarning'].update('error! ゲーム画面未設定')
+            print("\nGame Source is not set.\nPlease set it in OBS Control Settings.")
+            self.window['txt_obswarning'].update('Error: Game screen not set!')
             return False
         obsv = self.obs.ws.get_version()
         if obsv != None:
@@ -948,7 +946,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.init:
                 if not done_thissong:
                     if self.is_ondetect():
-                        print(f"曲決定画面を検出")
+                        print(f"Detected Song Decision")
                         time.sleep(self.settings['detect_wait'])
                         self.get_capture_after_rotate()
                         self.update_musicinfo()
@@ -1014,7 +1012,7 @@ class SDVXHelper:
                 self.sdvx_logger.get_rival_score(self.settings['player_name'], self.settings['rival_names'], self.settings['rival_googledrive'])
             except Exception: # 関数全体が落ちる=Googleドライブへのアクセスでコケたときの対策
                 logger.debug(traceback.format_exc())
-                print('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
+                print('Failed to get Rivals Scores') # ネットワーク接続やURL設定を見直す必要がある
         self.gui_main()
         self.load_rivallog()
         self.check_rival_update()
@@ -1028,7 +1026,7 @@ class SDVXHelper:
         self.start_detect()
 
         if self.settings['auto_update']:
-            self.window.write_event_value('アップデートを確認', " ")
+            self.window.write_event_value('Checking for updates.', " ")
 
         while True:
             ev, val = self.window.read()
@@ -1039,21 +1037,21 @@ class SDVXHelper:
                     self.save_settings()
                     self.control_obs_sources('quit')
                     summary_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_summary.png"
-                    print(f"本日の成果一覧を保存中...\n==> {summary_filename}")
+                    print(f"Saving Results of this session in\n==> {summary_filename}")
                     self.gen_summary.generate_today_all(summary_filename)
                     self.sdvx_logger.save_alllog()
                     self.update_mybest()
                     if not self.settings['dbg_enable_output']:
                         self.save_rivallog()
-                    print(f"プレーログを保存しました。")
+                    print(f"Play log has been saved.")
                     vf_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_total_vf.png"
-                    print(f"VF対象一覧を保存中 (OBSに設定していれば保存されます) ...\n==> {vf_filename}")
+                    print(f"Saving the list of VF Targets (if set in obs)\n==> {vf_filename}")
                     try:
                         tmps, tmpid = self.obs.search_itemid(self.settings[f'obs_scene_select'], 'sdvx_stats.html')
                         self.obs.enable_source(tmps, tmpid)
                         time.sleep(2)
                         self.obs.ws.save_source_screenshot('sdvx_stats.html', 'png', vf_filename, 3000, 2300, 100)
-                        print(f"VF対象一覧を保存しました。")
+                        print(f"VF Target list has been saved.")
                         self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1062,7 +1060,7 @@ class SDVXHelper:
                         self.obs.enable_source(tmps, tmpid)
                         time.sleep(2)
                         self.obs.ws.save_source_screenshot('sdvx_stats_v2.html', 'png', vf_filename, 3500, 2700, 100)
-                        print(f"VF対象一覧を保存しました。")
+                        print(f"VF Target list has been saved.")
                         self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1077,12 +1075,12 @@ class SDVXHelper:
                     except Exception as e:
                         print(traceback.format_exc())
             
-            elif ev == 'OBS制御設定':
+            elif ev == 'OBS Control Settings':
                 self.stop_detect()
                 if self.connect_obs():
                     self.gui_obs_control()
                 else:
-                    sg.popup_error('OBSに接続できません')
+                    sg.popup_error('Failed to connect to OBS webhook.')
             elif ev == 'btn_savefig':
                 self.save_screenshot_general()
 
@@ -1135,24 +1133,24 @@ class SDVXHelper:
                     self.settings['my_googledrive'] = tmp
                     self.window['txt_my_googledrive'].update(tmp)
 
-            elif ev == 'アップデートを確認':
+            elif ev == 'Check For Updates':
                 ver = self.get_latest_version()
                 if ver != SWVER:
-                    print(f'現在のバージョン: {SWVER}, 最新版:{ver}')
-                    ans = sg.popup_yes_no(f'アップデートが見つかりました。\n\n{SWVER} -> {ver}\n\nアプリを終了して更新します。', icon=self.ico)
+                    print(f'Current Version: {SWVER}, Latest Version:{ver}')
+                    ans = sg.popup_yes_no(f'Update Found!\n\n{SWVER} -> {ver}\n\nWould you like to update?', icon=self.ico)
                     if ans == "Yes":
                         self.save_settings()
                         self.control_obs_sources('quit')
                         if os.path.exists('update.exe'):
-                            logger.info('アップデート確認のため終了します')
+                            logger.info('Exiting for updates')
                             res = subprocess.Popen('update.exe')
                             break
                         else:
-                            sg.popup_error('update.exeがありません', icon=self.ico)
+                            sg.popup_error('Update.exe Is not found.', icon=self.ico)
                 else:
-                    print(f'お使いのバージョンは最新です({SWVER})')
+                    print(f'Program is up to date!({SWVER})')
 
-            elif ev in ('btn_setting', '設定'):
+            elif ev in ('btn_setting', 'Settings'):
                 self.stop_detect()
                 self.gui_setting()
             elif ev == 'read_from_result':
@@ -1160,13 +1158,13 @@ class SDVXHelper:
             elif ev == 'gen_jacket_imgs':
                 self.sdvx_logger.gen_jacket_imgs()
             ### webhook関連
-            elif ev == 'カスタムWebhook設定':
+            elif ev == 'Webhook Settings':
                 self.stop_detect()
                 self.gui_webhook()
-            elif ev == 'Googleドライブ設定(ライバル関連)':
+            elif ev == 'Google Drive Settings (For Rivals)':
                 self.stop_detect()
                 self.gui_googledrive()
-            elif ev == 'ライバルのスコアを取得':
+            elif ev == 'Update Rival Scores':
                 self.update_rival()
             elif ev == 'webhook_add':
                 self.webhook_add(val)
@@ -1205,27 +1203,27 @@ class SDVXHelper:
                     self.settings['rival_googledrive'].pop(idx)
                 self.window['rival_names'].update([[self.settings['rival_names'][i], self.settings['rival_googledrive'][i]] for i in range(len(self.settings['rival_names']))])
 
-            ### ツイート機能
-            elif ev == 'VF内訳をツイート':
+            ### Twitter Post Function
+            elif ev == 'Tweet VF Breakdown':
                 msg = self.sdvx_logger.analyze()
                 encoded_msg = urllib.parse.quote(f"{msg}")
                 webbrowser.open(f"https://twitter.com/intent/tweet?text={encoded_msg}")
-            elif ev == '全プレーログをCSV出力':
+            elif ev == 'Export Playlog as a CSV':
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_alllog.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_alllog_csv(tmp)
                     if ret:
-                        sg.popup_ok(f'CSV出力完了\n\n(-> {tmp})')
+                        sg.popup_ok(f'CSV Exported successfully!\n\n(-> {tmp})')
                     else:
-                        sg.popup_error(f'CSV出力失敗')
-            elif ev == '自己ベストをCSV出力':
+                        sg.popup_error(f'Failed to Export CSV')
+            elif ev == 'Export Personal bests as a CSV':
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_best.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_best_csv(tmp)
                     if ret:
-                        sg.popup_ok(f'CSV出力完了\n\n(-> {tmp})')
+                        sg.popup_ok(f'CSV Exported successfully!\n\n(-> {tmp})')
                     else:
-                        sg.popup_error(f'CSV出力失敗')
+                        sg.popup_error(f'Failed to Export CSV')
 
 if __name__ == '__main__':
     a = SDVXHelper()
