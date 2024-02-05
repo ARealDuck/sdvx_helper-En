@@ -427,7 +427,7 @@ class SDVXLogger:
                         logger.debug(f'rival data error! (title:{r[0]}, difficulty:{difficulty}, best_score:{best_score}, best_lamp:{best_lamp})')
             ret.append(tmp)
         self.rival_score = ret
-        print(f"ライバルのスコアを取得完了しました。")
+        print(f"Successfully updated rivals scores!")
         return ret
 
     def save_alllog(self):

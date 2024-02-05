@@ -369,24 +369,24 @@ class SDVXHelper:
         """
         if LR == None:
             sc = [
-                    sg.Column([[par_text('表示する')],[sg.Listbox(self.settings[f'obs_enable_{name}'], key=f'obs_enable_{name}', size=(20,4))], [par_btn('add', key=f'add_enable_{name}'),par_btn('del', key=f'del_enable_{name}')]]),
-                    sg.Column([[par_text('消す')],[sg.Listbox(self.settings[f'obs_disable_{name}'], key=f'obs_disable_{name}', size=(20,4))], [par_btn('add', key=f'add_disable_{name}'),par_btn('del', key=f'del_disable_{name}')]]),
+                    sg.Column([[par_text('Enable')],[sg.Listbox(self.settings[f'obs_enable_{name}'], key=f'obs_enable_{name}', size=(20,4))], [par_btn('add', key=f'add_enable_{name}'),par_btn('del', key=f'del_enable_{name}')]]),
+                    sg.Column([[par_text('Disable')],[sg.Listbox(self.settings[f'obs_disable_{name}'], key=f'obs_disable_{name}', size=(20,4))], [par_btn('add', key=f'add_disable_{name}'),par_btn('del', key=f'del_disable_{name}')]]),
                 ]
         else:
             scL = [[
-                    sg.Column([[par_text('表示する')],[sg.Listbox(self.settings[f'obs_enable_{name}0'], key=f'obs_enable_{name}0', size=(20,4))], [par_btn('add', key=f'add_enable_{name}0'),par_btn('del', key=f'del_enable_{name}0')]]),
-                    sg.Column([[par_text('消す')],[sg.Listbox(self.settings[f'obs_disable_{name}0'], key=f'obs_disable_{name}0', size=(20,4))], [par_btn('add', key=f'add_disable_{name}0'),par_btn('del', key=f'del_disable_{name}0')]]),
+                    sg.Column([[par_text('Enable')],[sg.Listbox(self.settings[f'obs_enable_{name}0'], key=f'obs_enable_{name}0', size=(20,4))], [par_btn('add', key=f'add_enable_{name}0'),par_btn('del', key=f'del_enable_{name}0')]]),
+                    sg.Column([[par_text('Disable')],[sg.Listbox(self.settings[f'obs_disable_{name}0'], key=f'obs_disable_{name}0', size=(20,4))], [par_btn('add', key=f'add_disable_{name}0'),par_btn('del', key=f'del_disable_{name}0')]]),
                 ]]
             scR = [[
-                    sg.Column([[par_text('表示する')],[sg.Listbox(self.settings[f'obs_enable_{name}1'], key=f'obs_enable_{name}1', size=(20,4))], [par_btn('add', key=f'add_enable_{name}1'),par_btn('del', key=f'del_enable_{name}1')]]),
-                    sg.Column([[par_text('消す')],[sg.Listbox(self.settings[f'obs_disable_{name}1'], key=f'obs_disable_{name}1', size=(20,4))], [par_btn('add', key=f'add_disable_{name}1'),par_btn('del', key=f'del_disable_{name}1')]]),
+                    sg.Column([[par_text('Enable')],[sg.Listbox(self.settings[f'obs_enable_{name}1'], key=f'obs_enable_{name}1', size=(20,4))], [par_btn('add', key=f'add_enable_{name}1'),par_btn('del', key=f'del_enable_{name}1')]]),
+                    sg.Column([[par_text('Disable')],[sg.Listbox(self.settings[f'obs_disable_{name}1'], key=f'obs_disable_{name}1', size=(20,4))], [par_btn('add', key=f'add_disable_{name}1'),par_btn('del', key=f'del_disable_{name}1')]]),
                 ]]
             sc = [
-                sg.Frame('開始時', scL, title_color='#440000'),sg.Frame('終了時', scR, title_color='#440000')
+                sg.Frame('Scene swap in', scL, title_color='#440000'),sg.Frame('Scene swap off', scR, title_color='#440000')
             ]
         ret = [
             [
-                par_text('シーン:')
+                par_text('Scene:')
                 ,par_text(self.settings[f'obs_scene_{name}'], size=(20, 1), key=f'obs_scene_{name}')
                 ,par_btn('set', key=f'set_scene_{name}')
             ],
@@ -547,7 +547,7 @@ class SDVXHelper:
         menuitems = [
             ['File',['Settings','OBS Control Settings', 'Webhook Settings', 'Check for updates']],
             ['Rivals',['Google Drive settings (For Rivals)', 'Update Rival Scores']],
-            ['Export',['Tweet VF Breakdown', 'Export Playlog as a CSV ', 'Export Personal bests as a CSV']]
+            ['Export',['Tweet VF Breakdown', 'Export Playlog as a CSV', 'Export Personal bests as a CSV']]
         ]
         layout = [
             [sg.Menubar(menuitems, key='menu')],
@@ -1133,7 +1133,7 @@ class SDVXHelper:
                     self.settings['my_googledrive'] = tmp
                     self.window['txt_my_googledrive'].update(tmp)
 
-            elif ev == 'Check For Updates':
+            elif ev == 'Check for updates':
                 ver = self.get_latest_version()
                 if ver != SWVER:
                     print(f'Current Version: {SWVER}, Latest Version:{ver}')
@@ -1161,7 +1161,7 @@ class SDVXHelper:
             elif ev == 'Webhook Settings':
                 self.stop_detect()
                 self.gui_webhook()
-            elif ev == 'Google Drive Settings (For Rivals)':
+            elif ev == 'Google Drive settings (For Rivals)':
                 self.stop_detect()
                 self.gui_googledrive()
             elif ev == 'Update Rival Scores':
