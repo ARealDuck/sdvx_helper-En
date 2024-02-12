@@ -85,15 +85,13 @@ class SDVXHelper:
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
 
+    # For displaying icons
+    # Args: relative_path (str): icon file name
+    # Returns: (str): Absolute path of icon file
+    # アイコン表示用
+    # Args: relative_path (str): アイコンファイル名
+    # Returns: (str): アイコンファイルの絶対パス
     def ico_path(self, relative_path:str):
-        """アイコン表示用
-
-        Args:
-            relative_path (str): アイコンファイル名
-
-        Returns:
-            str: アイコンファイルの絶対パス
-        """
         try:
             base_path = sys._MEIPASS
         except Exception:
@@ -127,13 +125,11 @@ class SDVXHelper:
                 ret = tag['href'].split('/')[-1]
                 break # 1番上が最新なので即break
         return ret
-    
+#  Loads User Settings as (self.settings) as an object, also sets a return value just in case.
+#  Returns: dict:usersettings
+#  tl: ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
+#  tl: Returns: dict: ユーザ設定
     def load_settings(self):
-        """ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
-
-        Returns:
-            dict: ユーザ設定
-        """
         ret = {}
         try:
             with open(SETTING_FILE) as f:
