@@ -1,3 +1,8 @@
 {
-  "english": "english.json"
+  "language": [
+    "English",
+    "日本語"
+  ],
+  "English": "languages/english.json",
+  "日本語": "languages/japanese.json"
 }
