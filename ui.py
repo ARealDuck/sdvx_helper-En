@@ -3,6 +3,7 @@ import PySimpleGUI as sg
 import json
 from functools import partial
 import os, sys
+from sdvxh_classes import *
 
 # Sets Fixed Values for PySimpleGUI
 # TODO - tinker with these settings and see if there is a better way to handle this.
@@ -24,6 +25,8 @@ class uifunc:
         self.window = False
         self.plays = 0
         self.load_settings()
+        self.load_languagelist()
+        self.load_guilanguage()
         self.ico = self.ico_path('icon.ico')
 
     # For displaying icons
@@ -38,16 +41,13 @@ class uifunc:
         except Exception:
             base_path = os.path.abspath(".")
         return os.path.join(base_path, relative_path)
-# Loads settings file and language keys and sets them as objects. sets a return value just in case
+# Loads settings file and language keys and sets them as objects.
 # TODO - set up a function that checks if the default language is set to a missing value and start up a first time setup event to pick and set language.
     def load_settings(self):
-        setjson = {}
-        try:
-            with open(settingsfile, 'r') as f:
-                setjson = json.load(f)
-        finally:
-            self.settings = setjson
-            return setjson
+            with open(settingsfile, 'r') as settingsjson:
+                self.settings = json.load(settingsjson)
+            with open(languagefile, self.settings['language'],'r') as languagejson:
+                self.uilanguage = languagejson
     # loads the defined langauge from settings and then pulls the dedicated key from language.json
     def load_languagelist(self):
         langlist = {}
@@ -61,10 +61,8 @@ class uifunc:
     def load_guilanguage(self):
         uilang = {}
         try:
-            with open(self.settings['language'], 'r') as sl:
-                self.setlanguage = json.load(sl)
-                with open(self.langlist[self.setlanguage], 'r') as ul:
-                    uilang = json.load(ul)
+            with open(self.langlist[self.settings['language']], 'r') as s:
+                uilang = json.load(s)
         finally:
             self.uilanguage = uilang
             return uilang
@@ -110,6 +108,7 @@ class uifunc:
             sc
         ]
         return ret
+
 
 
     # Sets the main GUI window.
@@ -161,7 +160,7 @@ class uifunc:
                     sg.Text(self.uilanguage['obstxtplaysfooter'],tooltip=self.uilanguage['obstxtplaysheadertt']),sg.Input(self.settings['obs_text_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
                 ],
                 [sg.Checkbox(self.uilanguage['alertblastermax'],self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
-                [sg.Text(self.uilanguage['logpicbgalpha']), sg.Combo(i for i in range(256),default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True],
+                [sg.Text(self.uilanguage['logpicbgalpha']), sg.Combo((i for i in range(256)),default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
                 [sg.Checkbox(self.uilanguage['autoupdate'],self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
                 [sg.Text(self.uilanguage['playernametxt']),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
             ]
@@ -170,7 +169,7 @@ class uifunc:
                 [sg.Frame(self.uilanguage['layoutgamemode'], layout=layout_gamemode,title_color='#000044')],
                 [sg.Frame(self.uilanguage['layoutetc'],layout=layout_etc,title_color='#000044')],
             ]
-            self.window = sg.Window(self.uilanguage['settingswindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=self.settings['lx'],self.settings['ly'])
+            self.window = sg.Window(self.uilanguage['settingswindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'],self.settings['ly']))
 
     def gui_obs_control(self):
          self.gui_mode = gui_mode.obs_control
@@ -193,3 +192,36 @@ class uifunc:
              [par_text(self.uilanguage['comboscene']),sg.Combo(obs_scenes, key='combo_scene',size=(40,1),enable_events=True)],
              [par_text]
          ]
+    def control_obs_sources(self, name:str):
+        """OBSソースの表示・非表示及びシーン切り替えを行う。
+        nameで適切なシーン名を指定する必要がある。
+
+        Args:
+            name (str): シーン名(boot,exit,play{0,1},select{0,1},result{0,1})
+
+        Returns:
+            bool: 正常終了していればTrue
+        """
+        #self.window['txt_mode'].update(self.detect_mode.name)
+        if self.obs == False:
+            logger.debug('cannot connect to OBS -> exit')
+            return False
+        logger.debug(f"name={name} (detect_mode={self.detect_mode.name})")
+        name_common = name
+        if name[-1] in ('0','1'):
+            name_common = name[:-1]
+        scene = self.settings[f'obs_scene_{name_common}']
+        # TODO 前のシーンと同じなら変えないようにしたい
+        if scene != '':
+            self.obs.change_scene(scene)
+        # 非表示の制御
+        for s in self.settings[f"obs_disable_{name}"]:
+            tmps, tmpid = self.obs.search_itemid(scene, s)
+            self.obs.disable_source(tmps,tmpid)
+            #print('disable', scene, s, tmps, tmpid)
+        # 表示の制御
+        for s in self.settings[f"obs_enable_{name}"]:
+            tmps, tmpid = self.obs.search_itemid(scene, s)
+            self.obs.enable_source(tmps,tmpid)
+            #print('enable', scene, s, tmps, tmpid)
+        return True
