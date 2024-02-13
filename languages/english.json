@@ -1,9 +1,18 @@
 {
 	"menulist": [
-	["File",["Settings::settingskey","OBS Control Settings::obsconkey","Webhook Settings::webhookkey","Check for updates::checkupkey"]],
+	["File",["Settings::setkey","OBS Control Settings::obsconkey","Webhook Settings::webhookkey","Check for updates::checkupkey"]],
 	["Rivals",["Google Drive Settings (for Rivals)::gdrivekey","Update Rival Scores::rivalupdatekey"]],
 	["Export",["Tweet VF Breakdown::tweetkey","Export Playlog as a CSV::playlogcsvkey","Export PB's as a CSV::pbcsvkey"]]
 	],
+	"setkey": "Settings::setkey",
+	"obsconkey": "OBS Control Settings::obsconkey",
+	"webhookkey": "Webhook Settings::webhookkey",
+	"checkupkey": "Check for updates::checkupkey",
+	"gdrivekey": "Google Drive Settings (for Rivals)::gdrivekey",
+	"rivalupdatekey": "Update Rival Scores::rivalupdatekey",
+	"tweetkey": "Tweet VF Breakdown::tweetkey",
+	"playlogcsvkey": "Export Playlog as a CSV::playlogcsvkey",
+	"pbcsvkey": "Export PB's as a CSV::pbcsvkey",
 	"obswarning": "ERROR: OBS websocket not found!",
 	"savefigtt": "Takes a screenshot of what is currently on screen.",
 	"obshost": "OBS Websocket Host IP",
@@ -11,7 +20,7 @@
 	"obspass": "OBS Websocket Password",
 	"screenorient": "Screen Orientation (When source is set to landscape)",
 	"topright": "Top of Screen is right",
-	"topleft": "top of screen is left",
+	"topleft": "Top of screen is left",
 	"saveoncapturechkbox": "Capture Compatibility Mode",
 	"saveoncapturett": "When Enabled, capture will be in out/capture.png\nWhen Disabled, capture will be processed in memory.\nIf this tool Causes lag/Crackling Try This.",
 	"screenshotfolder": "Screenshots output folder",
@@ -38,5 +47,6 @@
 	"scenecollection": "Scene Collection(toggled on startup)",
 	"comboscene": "Scene",
 	"combosource": "Source",
-	"obssource": "Game Source"
+	"obssource": "Game Source",
+	"setlanguage": "Program Language"
 }
