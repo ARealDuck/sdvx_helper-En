@@ -56,7 +56,6 @@ except Exception:
 
 class SDVXHelper:
     def __init__(self):
-        self.load_language()
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
         self.gui_mode    = gui_mode.init
@@ -74,11 +73,12 @@ class SDVXHelper:
         keyboard.add_hotkey('F8', self.update_rival)
 
         self.load_settings()
+        self.load_language()
         self.save_settings() # 値が追加された場合のために、一度保存
         self.update_musiclist()
         self.sdvx_logger = SDVXLogger(player_name=self.settings['player_name'])
-        self.vf_pre = self.sdvx_logger.total_vf # アプリ起動時のVF|VF on program start
-        self.vf_cur = self.sdvx_logger.total_vf # 最新のVF|Current VF
+        self.vf_pre = self.sdvx_logger.total_vf # アプリ起動時のVF
+        self.vf_cur = self.sdvx_logger.total_vf # 最新のVF
         self.connect_obs()
         vf_str = f"{self.settings['obs_txt_vf_header']}{self.vf_cur:.3f} ({self.vf_cur-self.vf_pre:+.3f}){self.settings['obs_txt_vf_footer']}"
         if self.obs != False:
@@ -88,13 +88,15 @@ class SDVXHelper:
         logger.debug('created.')
         logger.debug(f'settings:{self.settings}')
 
-    # For displaying icons
-    # Args: relative_path (str): icon file name
-    # Returns: (str): Absolute path of icon file
-    # アイコン表示用
-    # Args: relative_path (str): アイコンファイル名
-    # Returns: (str): アイコンファイルの絶対パス
     def ico_path(self, relative_path:str):
+        """アイコン表示用
+
+         Args:
+            relative_path (str): アイコンファイル名
+
+         Returns:
+                str: アイコンファイルの絶対パス
+         """
         try:
             base_path = sys._MEIPASS
         except Exception:
@@ -109,7 +111,7 @@ class SDVXHelper:
                 with urllib.request.urlopen(self.params['url_musiclist']) as wf:
                     with open('resources/musiclist.pkl', 'wb') as f:
                         f.write(wf.read())
-                print('musiclist.pklを更新しました。')
+                print(self.uilanguage['updatemusiclistprint'])
         except Exception:
             print(traceback.format_exc())
 
@@ -128,41 +130,45 @@ class SDVXHelper:
                 ret = tag['href'].split('/')[-1]
                 break # 1番上が最新なので即break
         return ret
-#  Loads User Settings as (self.settings) as an object, also sets a return value just in case.
-#  Returns: dict:usersettings
-#  tl: ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
-#  tl: Returns: dict: ユーザ設定
     def load_settings(self):
+        """ユーザ設定(self.settings)をロードしてself.settingsにセットする。一応返り値にもする。
+
+        Returns:
+            dict: ユーザ設定
+        """
         ret = {}
         try:
             with open(SETTING_FILE, encoding='utf-8') as f:
                 ret = json.load(f)
-                print(f"Settings Loaded\n")
+                print(f"設定をロードしました。\n")
         except Exception as e:
             logger.debug(traceback.format_exc())
-            print(f"Settings.json File not found. Using default values.")
+            print(f"有効な設定ファイルなし。デフォルト値を使います。")
 
         ### 後から追加した値がない場合にもここでケア
         for k in default_val.keys():
             if not k in ret.keys():
-                print(f"{k}Is not found in config. Using Defaults({default_val[k]}Registered)")
+                print(f"{k}が設定ファイル内に存在しません。デフォルト値({default_val[k]}を登録します。)")
                 ret[k] = default_val[k]
         self.settings = ret
         with open(self.settings['params_json'], 'r') as f:
             self.params = json.load(f)
         return ret
     def load_language(self):
-            with open(SETTING_FILE, 'r', encoding='utf-8') as settingsjson:
-                self.settings = json.load(settingsjson)
-            with open(LANGUAGE_FILE, 'r', encoding='utf-8') as languagejson:
+        """loads all of the files necessary for GUI language handling"""
+        """GUI言語処理に必要なすべてのファイルをロードする。"""
+        with open(LANGUAGE_FILE, 'r', encoding='utf-8') as languagejson:
                 self.language = json.load(languagejson)
-            with open(self.language[self.settings['txt_language']], 'r', encoding='utf-8') as uilanguage:
+        with open(self.language[self.settings['txt_language']], 'r', encoding='utf-8') as uilanguage:
                 self.uilanguage = json.load(uilanguage)
     def reload_language(self):
+        """When called, refreshes the uilanguage object with the set language"""
+        """を呼び出すと、設定ファイルから uilanguage オブジェクトをリフレッシュします。"""
         with open(self.language[self.settings['txt_language']], 'r', encoding='utf-8') as uilanguage:
             self.uilanguage = json.load(uilanguage)
-#saves the Users Settings
     def save_settings(self):
+        """ユーザ設定(self.settings)を保存する。
+        """
         with open(SETTING_FILE, 'w',encoding='utf-8') as f:
             json.dump(self.settings, f, indent=2)
 
@@ -293,7 +299,7 @@ class SDVXHelper:
             self.check_rival_update()
         except Exception:
             logger.debug(traceback.format_exc())
-            print('Failed to log Rival') # ネットワーク接続やURL設定を見直す必要がある
+            print('ライバルのログ取得に失敗しました。') # ネットワーク接続やURL設定を見直す必要がある
 
     def save_playerinfo(self):
         """プレイヤー情報(VF,段位)を切り出して画像として保存する。
@@ -426,16 +432,16 @@ class SDVXHelper:
             ]
         ]
         layout = [
-            [sg.Text('Player Name'), sg.Input(self.settings['player_name'], key='player_name2')],
-            [sg.Listbox(self.settings['webhook_names'], size=(50, 5), key='list_webhook', enable_events=True), sg.Button('Add', key='webhook_add', tooltip='If the same name is used it will be overwritten'), sg.Button('Delete', key='webhook_del')],
-            [sg.Text('Config Name'), sg.Input('', key='webhook_names', size=(63,1))],
-            [sg.Text('Webhook URL(Discord)'), sg.Input('', key='webhook_urls', size=(50,1))],
-            [sg.Checkbox('Send Image', key='webhook_enable_pics', default=True)],
-            [sg.Frame('Level', layout=layout_lvs, title_color='#000044')],
-            [sg.Frame('Lamp', layout=layout_lamps, title_color='#000044')],
+            [sg.Text(self.uilanguage['webhookplayername']), sg.Input(self.settings['player_name'], key='player_name2')],
+            [sg.Listbox(self.settings['webhook_names'], size=(50, 5), key='list_webhook', enable_events=True), sg.Button(self.uilanguage['webhookadd'], key='webhook_add', tooltip=self.uilanguage['webhookaddtt']), sg.Button(self.uilanguage['webhookdel'], key='webhook_del')],
+            [sg.Text(self.uilanguage['webhookconf']), sg.Input('', key='webhook_names', size=(63,1))],
+            [sg.Text(self.uilanguage['webhookurl']), sg.Input('', key='webhook_urls', size=(50,1))],
+            [sg.Checkbox(self.uilanguage['webhooksend'], key='webhook_enable_pics', default=True)],
+            [sg.Frame(self.uilanguage['webhookframelvl'], layout=layout_lvs, title_color='#000044')],
+            [sg.Frame(self.uilanguage['webhookframelamp'], layout=layout_lamps, title_color='#000044')],
         ]
 
-        self.window = sg.Window(f"SDVX helper - Webhook Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(self.uilanguage['webhookwindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_googledrive(self):
         """Googleドライブ連携設定用のGUIを起動する。
@@ -447,21 +453,21 @@ class SDVXHelper:
             [sg.Table([[self.settings['rival_names'][i], self.settings['rival_googledrive'][i]] for i in range(len(self.settings['rival_names']))], key='rival_names', auto_size_columns=False, headings=['name', 'gdrive_id'], size=(30,7), col_widths=[15, 30], justification='left', enable_events=True)],
         ]
         layout_btn = [
-            [par_btn('Add', key='add_rival')],
-            [par_btn('Delete', key='del_rival')],
+            [par_btn(self.uilanguage['gdriveadd'], key='add_rival')],
+            [par_btn(self.uilanguage['gdrivedel'], key='del_rival')],
             #[par_btn('上書き', key='mod_rival')],
         ]
         layout = [
-            [sg.Text('Your User Name'), sg.Input(self.settings['player_name'], key='player_name3')],
-            [par_text('Folder For Automatic Storage'), par_btn('Change', key='btn_my_googledrive')],
+            [sg.Text(self.uilanguage['gdriveuser']), sg.Input(self.settings['player_name'], key='player_name3')],
+            [par_text(self.uilanguage['gdrivestorage']), par_btn('Change', key='btn_my_googledrive')],
             [par_text(self.settings['my_googledrive'], key='txt_my_googledrive')],
-            [sg.Checkbox('Get Rival Score on Startup',self.settings['get_rival_score'],key='get_rival_score', enable_events=True)],
-            [sg.Checkbox('Update Rival Score on Results',self.settings['update_rival_on_result'],key='update_rival_on_result', enable_events=True)],
-            [par_text('Rival Name'), sg.Input('', key='rival_name', size=(30,1))],
-            [par_text('Rival URL'), sg.Input('', key='rival_googledrive')],
+            [sg.Checkbox(self.uilanguage['getrivalscore'],self.settings['get_rival_score'],key='get_rival_score', enable_events=True)],
+            [sg.Checkbox(self.uilanguage['updaterival'],self.settings['update_rival_on_result'],key='update_rival_on_result', enable_events=True)],
+            [par_text(self.uilanguage['rivalname']), sg.Input('', key='rival_name', size=(30,1))],
+            [par_text(self.uilanguage['rivalurl']), sg.Input('', key='rival_googledrive')],
             [sg.Column(layout_list), sg.Column(layout_btn)]
         ]
-        self.window = sg.Window(f"SDVX helper - Google Drive Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(self.uilanguage['gdrivewindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_obs_control(self):
         """OBS制御設定画面のGUIを起動する。
@@ -482,17 +488,17 @@ class SDVXHelper:
         layout_boot = self.build_layout_one_scene('boot')
         layout_quit = self.build_layout_one_scene('quit')
         layout_obs2 = [
-            [par_text('Scene Collection(Toggled on Startup:'), sg.Combo(self.obs.get_scene_collection_list(), key='scene_collection', size=(40,1), enable_events=True)],
-            [par_text('Scene:'), sg.Combo(obs_scenes, key='combo_scene', size=(40,1), enable_events=True)],
-            [par_text('Source:'),sg.Combo(obs_sources, key='combo_source', size=(40,1))],
-            [par_text('Game Source:'), par_text(self.settings['obs_source'], size=(20,1), key='obs_source'), par_btn('set', key='set_obs_source')],
-            [sg.Frame('Song Select',layout=layout_select, title_color='#000044')],
-            [sg.Frame('In Chart',layout=layout_play, title_color='#000044')],
-            [sg.Frame('Results Screen',layout=layout_result, title_color='#000044')],
+            [par_text(self.uilanguage['scenecollection']), sg.Combo(self.obs.get_scene_collection_list(), key='scene_collection', size=(40,1), enable_events=True)],
+            [par_text(self.uilanguage['comboscene']), sg.Combo(obs_scenes, key='combo_scene', size=(40,1), enable_events=True)],
+            [par_text(self.uilanguage['combosource']),sg.Combo(obs_sources, key='combo_source', size=(40,1))],
+            [par_text(self.uilanguage['obssource']), par_text(self.settings['obs_source'], size=(20,1), key='obs_source'), par_btn('set', key='set_obs_source')],
+            [sg.Frame(self.uilanguage['obssongsel'],layout=layout_select, title_color='#000044')],
+            [sg.Frame(self.uilanguage['obsinchart'],layout=layout_play, title_color='#000044')],
+            [sg.Frame(self.uilanguage['obsresults'],layout=layout_result, title_color='#000044')],
         ]
         layout_r = [
-            [sg.Frame('When Keystroke Counter Activates', layout=layout_boot, title_color='#000044')],
-            [sg.Frame('When Keystroke Counter Ends', layout=layout_quit, title_color='#000044')],
+            [sg.Frame(self.uilanguage['obsboot'], layout=layout_boot, title_color='#000044')],
+            [sg.Frame(self.uilanguage['obsquit'], layout=layout_quit, title_color='#000044')],
         ]
 
         col_l = sg.Column(layout_r)
@@ -502,7 +508,7 @@ class SDVXHelper:
             [col_l, col_r],
             [sg.Text('', key='info', font=(None,9))]
         ]
-        self.window = sg.Window(f"SDVX helper - OBS Control Settings", layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(self.uilanguage['obswindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
         if self.settings['obs_scene_collection'] != '':
             self.window['scene_collection'].update(value=self.settings['obs_scene_collection'])
 
@@ -608,15 +614,15 @@ class SDVXHelper:
             self.obs = OBSSocket(self.settings['host'], self.settings['port'], self.settings['passwd'], self.settings['obs_source'], self.imgpath)
             if self.gui_mode == gui_mode.main:
                 self.window['txt_obswarning'].update('')
-                print('Connected to OBS Websocket')
+                print(self.uilanguage['obsconnect'])
             return True
         except:
             logger.debug(traceback.format_exc())
             self.obs = False
             print('obs socket error!')
             if self.gui_mode == gui_mode.main:
-                self.window['txt_obswarning'].update('Error: OBS Websocket not found!')
-                print('Error: OBS websocket not found!')
+                self.window['txt_obswarning'].update(self.uilanguage['obsconnecterror'])
+                print(self.uilanguage['obsconnectfail'])
             return False
 
     def control_obs_sources(self, name:str):
@@ -776,10 +782,10 @@ class SDVXHelper:
             val (dict): pysimpleguiのwindow.read()で貰えるval
         """
         if self.window['webhook_names'] == '':
-            sg.popup_ok('Please enter a config name')
+            sg.popup_ok(self.uilanguage['webhooknamepop'])
         else:
             if self.window['webhook_urls'] == '':
-                sg.popup_ok('Please enter a Webhook URL')
+                sg.popup_ok(self.uilanguage['webhookurlpop'])
             else: # 登録実行
                 if val['webhook_names'] in self.settings['webhook_names']: # 上書きの場合
                     idx = self.settings['webhook_names'].index(val['webhook_names'])
@@ -878,7 +884,7 @@ class SDVXHelper:
             try:
                 res = webhook.execute()
             except Exception:
-                print('Error: Failed to send image through webhook, Is your URL correct?')
+                print(self.uilanguage['webhookimagefail'])
                 logger.debug(traceback.format_exc())
 
     def update_musicinfo(self):
@@ -911,8 +917,8 @@ class SDVXHelper:
             logger.debug('cannot connect to OBS -> exit')
             return False
         if self.settings['obs_source'] == '':
-            print("\nGame Source is not set.\nPlease set it in OBS Control Settings.")
-            self.window['txt_obswarning'].update('Error: Game screen not set!')
+            print(self.uilanguage['obsnosource'])
+            self.window['txt_obswarning'].update(self.uilanguage['obssourceerror'])
             return False
         obsv = self.obs.ws.get_version()
         if obsv != None:
@@ -953,7 +959,7 @@ class SDVXHelper:
             if self.detect_mode == detect_mode.init:
                 if not done_thissong:
                     if self.is_ondetect():
-                        print(f"Detected Song Decision")
+                        print(self.uilanguage['scenedecide'])
                         time.sleep(self.settings['detect_wait'])
                         self.get_capture_after_rotate()
                         self.update_musicinfo()
@@ -1019,7 +1025,7 @@ class SDVXHelper:
                 self.sdvx_logger.get_rival_score(self.settings['player_name'], self.settings['rival_names'], self.settings['rival_googledrive'])
             except Exception: # 関数全体が落ちる=Googleドライブへのアクセスでコケたときの対策
                 logger.debug(traceback.format_exc())
-                print('Failed to get Rivals Scores') # ネットワーク接続やURL設定を見直す必要がある
+                print(self.uilanguage['rivalfetchfail']) # ネットワーク接続やURL設定を見直す必要がある
         self.gui_main()
         self.load_rivallog()
         self.check_rival_update()
@@ -1044,21 +1050,21 @@ class SDVXHelper:
                     self.save_settings()
                     self.control_obs_sources('quit')
                     summary_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_summary.png"
-                    print(f"Saving Results of this session in\n==> {summary_filename}")
+                    print(self.uilanguage['savesession'])
                     self.gen_summary.generate_today_all(summary_filename)
                     self.sdvx_logger.save_alllog()
                     self.update_mybest()
                     if not self.settings['dbg_enable_output']:
                         self.save_rivallog()
-                    print(f"Play log has been saved.")
+                    print(self.uilanguage['savedplaylog'])
                     vf_filename = f"{self.settings['autosave_dir']}/{self.starttime.strftime('%Y%m%d')}_total_vf.png"
-                    print(f"Saving the list of VF Targets (if set in obs)\n==> {vf_filename}")
+                    print(self.uilanguage['savevflist'])
                     try:
                         tmps, tmpid = self.obs.search_itemid(self.settings[f'obs_scene_select'], 'sdvx_stats.html')
                         self.obs.enable_source(tmps, tmpid)
                         time.sleep(2)
                         self.obs.ws.save_source_screenshot('sdvx_stats.html', 'png', vf_filename, 3000, 2300, 100)
-                        print(f"VF Target list has been saved.")
+                        print(self.uilanguage['savedvflist'])
                         self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1067,7 +1073,7 @@ class SDVXHelper:
                         self.obs.enable_source(tmps, tmpid)
                         time.sleep(2)
                         self.obs.ws.save_source_screenshot('sdvx_stats_v2.html', 'png', vf_filename, 3500, 2700, 100)
-                        print(f"VF Target list has been saved.")
+                        print(self.uilanguage['savedvflist'])
                         self.obs.disable_source(tmps, tmpid)
                     except Exception:
                         pass
@@ -1088,7 +1094,7 @@ class SDVXHelper:
                 if self.connect_obs():
                     self.gui_obs_control()
                 else:
-                    sg.popup_error('Failed to connect to OBS webhook.')
+                    sg.popup_error(self.uilanguage['obswebsocketerror'])
             elif ev == 'btn_savefig':
                 self.save_screenshot_general()
 
@@ -1144,8 +1150,8 @@ class SDVXHelper:
             elif ev == self.uilanguage['checkupkey']:
                 ver = self.get_latest_version()
                 if ver != SWVER:
-                    print(f'Current Version: {SWVER}, Latest Version:{ver}')
-                    ans = sg.popup_yes_no(f'Update Found!\n\n{SWVER} -> {ver}\n\nWould you like to update?', icon=self.ico)
+                    print(self.uilanguage['chkupdateuptodate'])
+                    ans = sg.popup_yes_no(self.uilanguage['chkupdatefound'], icon=self.ico)
                     if ans == "Yes":
                         self.save_settings()
                         self.control_obs_sources('quit')
@@ -1154,9 +1160,9 @@ class SDVXHelper:
                             res = subprocess.Popen('update.exe')
                             break
                         else:
-                            sg.popup_error('Update.exe Is not found.', icon=self.ico)
+                            sg.popup_error(self.uilanguage['updateexenotfound'], icon=self.ico)
                 else:
-                    print(f'Program is up to date!({SWVER})')
+                    print(self.uilanguage['uptodate'])
 
             elif ev in (self.uilanguage['setkey']):
                 self.stop_detect()
@@ -1211,7 +1217,7 @@ class SDVXHelper:
                     self.settings['rival_googledrive'].pop(idx)
                 self.window['rival_names'].update([[self.settings['rival_names'][i], self.settings['rival_googledrive'][i]] for i in range(len(self.settings['rival_names']))])
 
-            ### Twitter Post Function
+            ### ツイート機能
             elif ev == self.uilanguage['tweetkey']:
                 msg = self.sdvx_logger.analyze()
                 encoded_msg = urllib.parse.quote(f"{msg}")
@@ -1221,17 +1227,17 @@ class SDVXHelper:
                 if tmp != '':
                     ret = self.sdvx_logger.gen_alllog_csv(tmp)
                     if ret:
-                        sg.popup_ok(f'CSV Exported successfully!\n\n(-> {tmp})')
+                        sg.popup_ok(self.uilanguage['csvexport'])
                     else:
-                        sg.popup_error(f'Failed to Export CSV')
+                        sg.popup_error(self.uilanguage['csvexportfail'])
             elif ev == self.uilanguage['pbcsvkey']:
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_best.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_best_csv(tmp)
                     if ret:
-                        sg.popup_ok(f'CSV Exported successfully!\n\n(-> {tmp})')
+                        sg.popup_ok(self.uilanguage['csvexport'])
                     else:
-                        sg.popup_error(f'Failed to Export CSV')
+                        sg.popup_error(self.uilanguage['csvexportfail'])
 
 if __name__ == '__main__':
     a = SDVXHelper()
