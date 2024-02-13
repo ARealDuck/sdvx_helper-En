@@ -20,6 +20,7 @@ from manage_settings import *
 from sdvxh_classes import *
 import urllib
 import webbrowser
+import ui
 # フラットウィンドウ、右下モード(左に上部側がくる)
 # フルスクリーン、2560x1440に指定してもキャプは1920x1080で撮れてるっぽい
 
@@ -45,6 +46,7 @@ FONTs = ('Meiryo',8)
 par_text = partial(sg.Text, font=FONT)
 par_btn = partial(sg.Button, pad=(3,0), font=FONT, enable_events=True, border_width=0)
 SETTING_FILE = 'settings.json'
+LANGUAGE_FILE = 'languages/language.json'
 sg.theme('SystemDefault')
 try:
     with open('version.txt', 'r') as f:
@@ -54,6 +56,7 @@ except Exception:
 
 class SDVXHelper:
     def __init__(self):
+        self.load_language()
         self.ico=self.ico_path('icon.ico')
         self.detect_mode = detect_mode.init
         self.gui_mode    = gui_mode.init
@@ -132,7 +135,7 @@ class SDVXHelper:
     def load_settings(self):
         ret = {}
         try:
-            with open(SETTING_FILE) as f:
+            with open(SETTING_FILE, encoding='utf-8') as f:
                 ret = json.load(f)
                 print(f"Settings Loaded\n")
         except Exception as e:
@@ -148,9 +151,19 @@ class SDVXHelper:
         with open(self.settings['params_json'], 'r') as f:
             self.params = json.load(f)
         return ret
+    def load_language(self):
+            with open(SETTING_FILE, 'r', encoding='utf-8') as settingsjson:
+                self.settings = json.load(settingsjson)
+            with open(LANGUAGE_FILE, 'r', encoding='utf-8') as languagejson:
+                self.language = json.load(languagejson)
+            with open(self.language[self.settings['txt_language']], 'r', encoding='utf-8') as uilanguage:
+                self.uilanguage = json.load(uilanguage)
+    def reload_language(self):
+        with open(self.language[self.settings['txt_language']], 'r', encoding='utf-8') as uilanguage:
+            self.uilanguage = json.load(uilanguage)
 #saves the Users Settings
     def save_settings(self):
-        with open(SETTING_FILE, 'w') as f:
+        with open(SETTING_FILE, 'w',encoding='utf-8') as f:
             json.dump(self.settings, f, indent=2)
 
     def save_screenshot_general(self):
@@ -352,6 +365,7 @@ class SDVXHelper:
             self.sdvx_logger.player_name = val['player_name']
             self.settings['save_on_capture'] = val['save_on_capture']
             self.settings['save_jacketimg'] = val['save_jacketimg']
+            self.settings['txt_language'] = val['txt_language']
 
     def build_layout_one_scene(self, name, LR=None):
         """OBS制御設定画面におけるシーン1つ分のGUIを出力する。
@@ -499,39 +513,40 @@ class SDVXHelper:
         if self.window:
             self.window.close()
         layout_obs = [
-            [par_text('OBS host: '), sg.Input(self.settings['host'], font=FONT, key='input_host', size=(20,20))],
-            [par_text('OBS websocket port: '), sg.Input(self.settings['port'], font=FONT, key='input_port', size=(10,20))],
-            [par_text('OBS websocket password'), sg.Input(self.settings['passwd'], font=FONT, key='input_passwd', size=(20,20), password_char='*')],
+            [par_text(self.uilanguage['obshost']), sg.Input(self.settings['host'], font=FONT, key='input_host', size=(20,20))],
+            [par_text(self.uilanguage['obsport']), sg.Input(self.settings['port'], font=FONT, key='input_port', size=(10,20))],
+            [par_text(self.uilanguage['obspass']), sg.Input(self.settings['passwd'], font=FONT, key='input_passwd', size=(20,20), password_char='*')],
         ]
         layout_gamemode = [
-            [par_text('Screen Orientation (When Screen is set to landscape)'), sg.Radio('Top is Right', group_id='topmode',default=self.settings['top_is_right'], key='top_is_right'), sg.Radio('Top is Left', group_id='topmode', default=not self.settings['top_is_right'])],
+            [par_text(self.uilanguage['screenorient']), sg.Radio(self.uilanguage['topright'], group_id='topmode',default=self.settings['top_is_right'], key='top_is_right'), sg.Radio(self.uilanguage['topleft'], group_id='topmode', default=not self.settings['top_is_right'])],
         ]
         layout_etc = [
-            [sg.Checkbox('Screenshot Processing Compatibility Mode', self.settings['save_on_capture'], key='save_on_capture', enable_events=True, tooltip='Compatibility mode enabled. Screenshots will be saved in:out/capture.png\nCompatability mode Disabled, Screenshots will be processed in memory.\nIf this tool Causes lag/Crackling Try This.')],
-            [par_text('Screenshots Folder'), par_btn('Change', key='btn_autosave_dir')],
+            [sg.Checkbox(self.uilanguage['saveoncapturechkbox'], self.settings['save_on_capture'], key='save_on_capture', enable_events=True, tooltip=self.uilanguage['saveoncapturett'])],
+            [par_text(self.uilanguage['screenshotfolder']), par_btn(self.uilanguage['changebtn'], key='btn_autosave_dir')],
             [sg.Text(self.settings['autosave_dir'], key='txt_autosave_dir')],
-            [sg.Checkbox('Always Save Screenshots',self.settings['autosave_always'],key='chk_always', enable_events=True)],
-            [sg.Checkbox('Ignore if score is D rank',self.settings['ignore_rankD'],key='chk_ignore_rankD', enable_events=True)],
-            [sg.Button('Update stats from screenshots (Heavy)', key='read_from_result')],
-            [sg.Button('Generate jacket images from screenshots (for VF view)', key='gen_jacket_imgs')],
-            [sg.Checkbox('Automatic Saving of jacket images from results screen(For VF View)', self.settings['save_jacketimg'], key='save_jacketimg')],
-            [sg.Text('Text Settings for Playcount', tooltip='Use a text source In obs for this.\nIt update the source with your playcount.')],
+            [sg.Checkbox(self.uilanguage['autosavealways'],self.settings['autosave_always'],key='chk_always', enable_events=True)],
+            [sg.Checkbox(self.uilanguage['ignorerankd'],self.settings['ignore_rankD'],key='chk_ignore_rankD', enable_events=True)],
+            [sg.Button(self.uilanguage['readfromresult'], key='read_from_result')],
+            [sg.Button(self.uilanguage['genjacketimgs'], key='gen_jacket_imgs')],
+            [sg.Checkbox(self.uilanguage['savejacketimg'], self.settings['save_jacketimg'], key='save_jacketimg')],
+            [sg.Text(self.uilanguage['txtpcsetting'], tooltip=self.uilanguage['txtpcsettingtt'])],
             [
                 #par_text('Source Name'),sg.Input(self.settings['obs_txt_plays'], key='obs_txt_plays', size=(20,1)),
-                sg.Text('Header', tooltip='Plays:, Number of songs played today:, etc,'),sg.Input(self.settings['obs_txt_plays_header'], key='obs_txt_plays_header', size=(10,1)),
-                sg.Text('Footer', tooltip='Plays, Songs, etc,'), sg.Input(self.settings['obs_txt_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
+                sg.Text(self.uilanguage['obstxtplaysheader'], tooltip=self.uilanguage['obstxtplaysheadertt']),sg.Input(self.settings['obs_txt_plays_header'], key='obs_txt_plays_header', size=(10,1)),
+                sg.Text(self.uilanguage['obstxtplaysfooter'], tooltip=self.uilanguage['obstxtplaysfootertt']), sg.Input(self.settings['obs_txt_plays_footer'], key='obs_txt_plays_footer', size=(10,1)),
             ],
-            [sg.Checkbox('Play a sound when BLASTER GAUGE is at max',self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
-            [sg.Text('Opacity of Log Image(0-255, 0:Transparent)'), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
-            [sg.Checkbox('Check for updates on startup',self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
-            [sg.Text('Playername for sdvx_stats.html'),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
+            [sg.Checkbox(self.uilanguage['alertblastermax'],self.settings['alert_blastermax'],key='alert_blastermax', enable_events=True)],
+            [sg.Text(self.uilanguage['logpicbgalpha']), sg.Combo([i for i in range(256)],default_value=self.settings['logpic_bg_alpha'],key='logpic_bg_alpha', enable_events=True)],
+            [sg.Checkbox(self.uilanguage['autoupdate'],self.settings['auto_update'],key='chk_auto_update', enable_events=True)],
+            [sg.Text(self.uilanguage['playernametxt']),sg.Input(self.settings['player_name'], key='player_name', size=(30,1))],
+            [sg.Text(self.uilanguage['setlanguage']),sg.Combo(self.language['language'], default_value=self.settings['txt_language'], key='txt_language', enable_events=True)],
         ]
         layout = [
-            [sg.Frame('OBS Settings', layout=layout_obs, title_color='#000044')],
-            [sg.Frame('Game Settings', layout=layout_gamemode, title_color='#000044')],
-            [sg.Frame('Program Settings', layout=layout_etc, title_color='#000044')],
+            [sg.Frame(self.uilanguage['layoutobs'], layout=layout_obs, title_color='#000044')],
+            [sg.Frame(self.uilanguage['layoutgamemode'], layout=layout_gamemode, title_color='#000044')],
+            [sg.Frame(self.uilanguage['layoutetc'], layout=layout_etc, title_color='#000044')],
         ]
-        self.window = sg.Window('SDVX helper General Settings', layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
+        self.window = sg.Window(self.uilanguage['settingwindow'], layout, grab_anywhere=True,return_keyboard_events=True,resizable=False,finalize=True,enable_close_attempted_event=True,icon=self.ico,location=(self.settings['lx'], self.settings['ly']))
 
     def gui_main(self):
         """メイン画面のGUIを起動する。
@@ -540,19 +555,15 @@ class SDVXHelper:
         self.detect_mode = detect_mode.init
         if self.window:
             self.window.close()
-        menuitems = [
-            ['File',['Settings','OBS Control Settings', 'Webhook Settings', 'Check for updates']],
-            ['Rivals',['Google Drive settings (For Rivals)', 'Update Rival Scores']],
-            ['Export',['Tweet VF Breakdown', 'Export Playlog as a CSV', 'Export Personal bests as a CSV']]
-        ]
         layout = [
-            [sg.Menubar(menuitems, key='menu')],
+            [sg.Menubar(self.uilanguage['menulist'])],
             [
-                par_text('plays:'), par_text(str(self.plays), key='txt_plays')
-                ,par_text('mode:'), par_text(self.detect_mode.name, key='txt_mode')
-                ,par_text('Error: OBS websocket not found!', key='txt_obswarning', text_color="#ff0000")],
-            [par_btn('save', tooltip='Screenshot what is currently on screen', key='btn_savefig')],
-            [par_text('', size=(40,1), key='txt_info')],
+                par_text('Plays:'), par_text(str(self.plays), key='txt_plays')
+                , par_text('Mode:'), par_text(self.detect_mode.name, key='txt_mode')
+                , par_text(self.uilanguage['obswarning'], key='txt_obswarning', text_color="#ff0000")],
+            [par_btn('save', tooltip=self.uilanguage['savefigtt'], key='btn_savefig')],
+            [par_text()
+             ]
         ]
         if self.settings['dbg_enable_output']:
             layout.append([sg.Output(size=(63,8), key='output', font=(None, 9))])
@@ -1067,11 +1078,12 @@ class SDVXHelper:
                         plays_str = f"{self.settings['obs_txt_plays_header']}{self.plays}{self.settings['obs_txt_plays_footer']}"
                         if self.obs != False:
                             self.obs.change_text(self.settings['obs_txt_plays'], plays_str)
+                        self.reload_language()
                         self.gui_main()
                     except Exception as e:
                         print(traceback.format_exc())
             
-            elif ev == 'OBS Control Settings':
+            elif ev == self.uilanguage['obsconkey']:
                 self.stop_detect()
                 if self.connect_obs():
                     self.gui_obs_control()
@@ -1129,7 +1141,7 @@ class SDVXHelper:
                     self.settings['my_googledrive'] = tmp
                     self.window['txt_my_googledrive'].update(tmp)
 
-            elif ev == 'Check for updates':
+            elif ev == self.uilanguage['checkupkey']:
                 ver = self.get_latest_version()
                 if ver != SWVER:
                     print(f'Current Version: {SWVER}, Latest Version:{ver}')
@@ -1146,7 +1158,7 @@ class SDVXHelper:
                 else:
                     print(f'Program is up to date!({SWVER})')
 
-            elif ev in ('btn_setting', 'Settings'):
+            elif ev in (self.uilanguage['setkey']):
                 self.stop_detect()
                 self.gui_setting()
             elif ev == 'read_from_result':
@@ -1154,13 +1166,13 @@ class SDVXHelper:
             elif ev == 'gen_jacket_imgs':
                 self.sdvx_logger.gen_jacket_imgs()
             ### webhook関連
-            elif ev == 'Webhook Settings':
+            elif ev == self.uilanguage['webhookkey']:
                 self.stop_detect()
                 self.gui_webhook()
-            elif ev == 'Google Drive settings (For Rivals)':
+            elif ev == self.uilanguage['gdrivekey']:
                 self.stop_detect()
                 self.gui_googledrive()
-            elif ev == 'Update Rival Scores':
+            elif ev == self.uilanguage['rivalupdatekey']:
                 self.update_rival()
             elif ev == 'webhook_add':
                 self.webhook_add(val)
@@ -1200,11 +1212,11 @@ class SDVXHelper:
                 self.window['rival_names'].update([[self.settings['rival_names'][i], self.settings['rival_googledrive'][i]] for i in range(len(self.settings['rival_names']))])
 
             ### Twitter Post Function
-            elif ev == 'Tweet VF Breakdown':
+            elif ev == self.uilanguage['tweetkey']:
                 msg = self.sdvx_logger.analyze()
                 encoded_msg = urllib.parse.quote(f"{msg}")
                 webbrowser.open(f"https://twitter.com/intent/tweet?text={encoded_msg}")
-            elif ev == 'Export Playlog as a CSV':
+            elif ev == self.uilanguage['playlogcsvkey']:
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_alllog.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_alllog_csv(tmp)
@@ -1212,7 +1224,7 @@ class SDVXHelper:
                         sg.popup_ok(f'CSV Exported successfully!\n\n(-> {tmp})')
                     else:
                         sg.popup_error(f'Failed to Export CSV')
-            elif ev == 'Export Personal bests as a CSV':
+            elif ev == self.uilanguage['pbcsvkey']:
                 tmp = filedialog.asksaveasfilename(defaultextension='csv', filetypes=[("csv file", "*.csv")], initialdir='./', initialfile='sdvx_helper_best.csv')
                 if tmp != '':
                     ret = self.sdvx_logger.gen_best_csv(tmp)
